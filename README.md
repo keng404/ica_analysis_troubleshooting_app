@@ -1,5 +1,5 @@
 # ica_analysis_troubleshooting_app
-pyscript-based web app that allows a user to generate CLI and API requeue templates for Illumina Connected Analytics (ICA)
+pyscript-based web app that allows a user to grab logs and start troubleshooting analyses for Illumina Connected Analytics (ICA)
 
 See [here](https://keneng87.pyscriptapps.com/ica-analysis-troubleshooting-app/latest/) to interact with it live.
 
