@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ICA Analysis Troubleshooting App</title>
+    <!-- Recommended meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/examples.css" />
+    <!-- PyScript CSS -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
+   <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script> -->
+    <script type="module"> import mermaid.cli from https://cdn.jsdelivr.net/npm/mermaid.cli@0.5.1/+esm </script>
+    <!-- This script tag bootstraps PyScript -->
+    <script type="module" src="https://pyscript.net/releases/2023.11.2/core.js"></script>
+    <!-- for splashscreen -->
+    <style>
+        #loading { outline: none; border: none; background: transparent }
+    </style>
+    <script type="module">
+        const loading = document.getElementById('loading');
+        addEventListener('py:ready', () => loading.close());
+        loading.showModal();
+    </script>
+    <title>ICA Analysis Troubleshooting App</title>
+</head>
+<body>
+    <dialog id="loading">
+        <h1>Loading...</h1>
+            <dialog id="loading">
+            <h1>Loading...</h1>
+        </dialog></dialog>
+    <nav class="navbar" style="background-color: #000000">
+        <div class="app-header">
+            <a class="title" href="" style="color: #f0ab3c">ICA Analyses Troubleshooting App </a>
+        </div>
+    </nav>
+    <!-- HTML reference and call to your main python script--> 
+    <section class="pyscript">
+        <script type="py" src="./main.py" config="./pyscript.toml" async></script>
+    </section>
+   <!--  <div id="requeue-template-container"  class="container">
+        <script type="py" terminal id=my_template></script>
+    </div> -->
+    <div id="disclaimer-message">This unofficial app is for ICA users to download logs and troubleshoot analyses. 
+        <br> 
+        <p>
+            This is for educational purposes only and is not intended to be apart of the ICA product
+        </p>
+    </div>
+    <section id="section1">
+        <h1 id="step1-message"></h1>
+        <div id="login-form" class="container">
+            <label for="username"><b>Username</b></label>
+            <input type="text" id="txt-uname" placeholder="None" name="username" required>
+            <br>
+            <label for="password"><b>Password</b></label>
+            <input type="password"  id="txt-pwd" placeholder="None" name="password" required>
+            <br>
+            <label for="tenant"><b>Domain Name (suffix before *.login.illumina.com). </b></label>
+            <br>
+            <input type="text" id="txt-domain-name" placeholder="None" name="domain_name" >
+            <br>
+            <button 
+            type="submit"
+            id="login-load"
+            class="py-button"
+            py-click="load_login_info"
+            >
+            Login
+            </button>
+        </div>
+        <div id="step1-output"></div>
+        <hr>
+        </section>
+
+        <section id="section2">
+        <!--  Dynamic rendering of a table of ICA project names and Ids -->
+        <h1 id="step2-message"></h1>
+        <h2>A project table will be rendered below after querying ICA</h2>
+        <div id="project-output">
+            <h3>Search for a project</h3>
+            <table id="project-output-inner" class=center></table>
+        </div>
+
+        <div id="step2-selection-form"  class="container">
+            <label for="project"><b>Enter ICA Project Name</b></label>
+            <input type="text" id="txt-project-name" placeholder="None" name="project" required>
+
+            <button 
+                type="submit" 
+                id="project-selector" 
+                class="py-button"
+                py-click="load_project_selection_info"
+            >
+            Select Project 
+            </button>
+        </div>
+        
+        <div id="step2-selection"></div>
+
+        <hr>
+        </section>
+
+        <section id="section3">
+        <h1 id="step3-message"></h1>
+        <h2>An analyses table will be rendered below after querying ICA
+            <br>
+            You may need to wait a minute for the table to render
+        </h2>
+        <div id="analyses-output">
+            <h3>Search for an analysis</h3>
+            <table id="analyses-output-inner" class=center></table>
+        </div>
+            
+        <div id="step3-selection-form"  class="container">
+            <label for="analysis"><b>Enter ICA Analysis Name</b></label>
+            <input type="text" id="txt-analysis-name" placeholder="None" name="analysis" required>
+
+            <button 
+                type="submit" 
+                id="analysis-selector" 
+                class="py-button"
+                py-click="load_analysis_selection_info"
+            >
+            Select Analysis 
+            </button>
+        </div>
+        <div id="step3-selection"></div>
+        <hr>
+        </section>
+
+        <section id="section4">
+            <h1 id="step4-message"></h1>
+            <div id="step4-selection-form"  class="container">
+                <label><b>Push button to generate gantt chart for your analysis</b></label>
+                <!--- <input type="text" id="txt-project-name" placeholder="None" name="project" required> --> 
+
+                <button 
+                    type="submit" 
+                    id="gantt-generator" 
+                    class="py-button"
+                    py-click="generate_gantt"
+                >
+                Generate Gantt 
+                </button>
+            </div>
+            <div id="step4-selection"></div>
+        </section>
+        <hr>
+        <pre id="gantt-chart"  class="mermaid"></pre>
+        <hr>
+
+        <section id="section5">
+            <h1 id="step5-message"></h1>
+            <div id="troubleshoot-download"  class="container">
+                <script type="py" terminal id=my_template></script>
+            </div>
+            <div id="analyses-metadata-output">
+                <h3>Analysis Step Metadata Table</h3>
+                <table id="analyses-metadata-output-inner" class=center></table>
+            </div>
+        </section>
+        <hr>
+        <section id="section6">
+            <div id="step6-selection-form"  class="container">
+                <label><b>Push button to prepare logs for download</b></label>
+                <button 
+                    type="submit" 
+                    id="log-download-generator" 
+                    class="py-button"
+                    py-click="create_log_archive"
+                >
+                Create ZIP file 
+                </button>
+            </div>
+            <div id="download-ready"></div>
+
+            <section class="pyscript">
+                <script type="py" src="./create_zip.py"  async></script>
+            </section>
+
+            <div id="analysis-step-metadata-download">
+                <a id="analysis-step-metadata-download-child">
+                    <button>Download Analysis Logs</button>
+                </a>
+            </div> 
+            <h1 id="step6-message"></h1>
+        </section>
+        <hr>
+</body>
+</html>
