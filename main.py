@@ -44,7 +44,7 @@ pydom["div#step4-selection-form"].style["display"] = "none"
 pydom["pre#gantt-chart"].style['display'] = "none"
 #pydom["div#requeue-template-download"].style["display"] = "none"
 #pydom["section#learn-the-steps"].style["display"] = "none"
-pydom["div#troubleshoot-download"].style['display'] = "none"
+#pydom["div#troubleshoot-download"].style['display'] = "none"
 pydom["div#analysis-step-metadata-download"].style["display"] = "none"
 pydom["div#analyses-metadata-output"].style["display"] = "none"
 pydom["div#step6-selection-form"].style["display"] = "none"
@@ -650,7 +650,11 @@ def create_analysis_metadata_table(step_data):
         #if len(re.findall("\(",step['name'])) > 0: 
         #    step['name'] = re.sub("\(","_",step['name'])
         #if len(re.findall("\)",step['name'])) > 0 : 
-        #    step['name'] = re.sub("\)","_",step['name']) 
+        #    step['name'] = re.sub("\)","_",step['name'])
+        if 'endDate' not in step.keys():
+            step['endDate'] = "2024-01-03T00:00:00Z"
+        if 'startDate' not in step.keys():
+            step['startDate'] = "2024-01-03T00:00:00Z"
         if 'exitCode' in step.keys():
             new_line = f"{step['name']}\t{step['id']}\t{step['startDate']}\t{step['endDate']}\t{step['exitCode']}\t{step['technical']}"
             #print(new_line)
