@@ -685,16 +685,16 @@ def create_gantt_section_stubs(analysis_metadata_table):
     for step in analysis_metadata_table:
         if step[len(step)-1] == "True":
             #print(step)
-            if re.search("finalize_output",step[0]) is not None  or re.search("Urn",step[0]) is not None or re.search("Storage",step[0]) is not None or re.search("Finalize Output",step[0]) is not None:
+            if re.search("finalize_output",step[0]) is not None  or re.search("Urn",step[0]) is not None or re.search("Storage",step[0]) is not None or re.search("Finalize Output",step[0]) is not None or re.search("post",step[0]) is not None:
                 section_name = "Finalize_Output_Data"
                 add_to_section(analysis_sections,section_name,step)
-            elif re.search("prepare_input",step[0]) is not None or re.search("Prepare Input",step[0]) is not None or re.search("Workflow_pre",step[0]) is not None:
+            elif re.search("prepare_input",step[0]) is not None or re.search("Prepare Input",step[0]) is not None or re.search("Workflow_pre",step[0]) is not None or re.search("Workflow pre",step[0]) is not None:
                 section_name = "Prepare_Input_Data"
                 add_to_section(analysis_sections,section_name,step) 
-            elif re.search("pipeline",step[0]) is not None or re.search("Pipeline",step[0]) is not None:
+            elif re.search("pipeline",step[0]) is not None or re.search("Pipeline",step[0]) is not None or re.search("runner",step[0]) is not None:
                 section_name = "Pipeline Runner"
                 add_to_section(analysis_sections,section_name,step) 
-            elif re.search("Workflow_monitor",step[0]) is not None:
+            elif re.search("Workflow_monitor",step[0]) is not None or re.search("Workflow monitor",step[0]) is not None:
                 section_name = "Run_Monitor"
                 add_to_section(analysis_sections,section_name,step) 
             else:
@@ -910,14 +910,13 @@ def download_data_from_url(download_url,output_name=None):
     return print(f"Downloading from {download_url}")
 ######################################################
 def download(download_url, output_name = None):
-    response =   open_url(download_url)
-    response_data =  response.read()
-    # print(response_data)
-    #if response.status == 200:
-    with open(output_name, 'w') as f:  # 'wb' for write binary mode
-        for l in response_data:
+    data = open_url(download_url)
+    # Since data is a io.StringIO, we need to call .read or .readlines
+    # to see all the data.
+    #display(data.read(),target = "data")
+    with open(output_name,"w") as f:
+        for l in data.read():
             f.write(l)
-        #print(response_data)
     return print(f"Downloading from {download_url}")
 
 async def download_binary(download_url, output_name = None):
@@ -941,7 +940,7 @@ async def download_file(jwt_token,project_id,data_id,output_path):
         downloadFile = await pyfetch(full_url, method = 'POST', headers = headers)
         downloadFile_response = await downloadFile.json()
         download_url = downloadFile_response['url']
-        download_url = '"' + download_url + '"'
+        #download_url = '"' + download_url + '"'
         #download_data_from_url(download_url,output_path)
     except:
         raise ValueError(f"Could not get analyses streams for project: {project_id}")
@@ -997,7 +996,7 @@ async def get_logs(jwt_token,project_id,analysis_id,extra_headers,output_dir):
                 #display(f"For {step_name} Downloading the log for {stderr_path}",target="troubleshoot-download",append=True)
                 download_url = await download_file(jwt_token,project_id,stderr_id,f"{output_dir}/" +step_name +".stderr.log")
                 #download_data_from_url(download_url,f"{output_dir}/" +step_name +".stderr.log")
-                log_urls[f"{output_dir}/" +step_name +".stderrlog"] = download_url 
+                log_urls[f"{output_dir}/" +step_name +".stderr.log"] = download_url 
             else:
                 sys.stderr.write(f"Cannot find stdErrData for {step_name}")
                 print(step['logs'])
@@ -1017,6 +1016,22 @@ async def get_logs(jwt_token,project_id,analysis_id,extra_headers,output_dir):
     return log_urls
 
 ##########################################
+HTML_ELEMENTS_TO_RELOAD = ['project-output-inner','project-output-inner-script','project-output-inner_wrapper', 'analyses-output-inner','analyses-output-inner-script','analyses-output-inner_wrapper','gantt-chart','gantt-chart-script','analyses-metadata-output-inner-script','analyses-metadata-output-inner','analyses-metadata-output-inner_wrapper']
+
+async def remove_html_element(html_element_id):
+    prune_elements = False
+    idx_of_interest = 0
+    for idx,element in enumerate(HTML_ELEMENTS_TO_RELOAD):
+        if element == html_element_id:
+            idx_of_interest = idx
+            prune_elements = True
+    for idx,element in enumerate(HTML_ELEMENTS_TO_RELOAD):
+        if idx >= idx_of_interest and prune_elements is True:
+            html_element = document.getElementById(element)
+            if html_element is not None and document.getElementById(element).innerHTML != "":
+                html_element.remove()
+
+###########
 #### STEP 1 in HTML
 async def load_login_info(event):
     display("STEP1: Authorizing login credentials",target="step1-output",append="False")
@@ -1044,23 +1059,58 @@ async def load_login_info(event):
     PROJECT_ID = None
     #### select project if needed
     if PROJECT_NAME is None:
+        await remove_html_element('project-output-inner')
         project_table = await list_projects(jwt_token)
         df = pd.DataFrame(project_table, columns = ['ICA Project Name', 'ICA Project ID']) 
 
-        pydom["div#project-output"].style["display"] = "block"
+        #pydom["div#project-output"].style["display"] = "block"
 
         ### show field and submit button for STEP2:
-        pydom["div#step2-selection-form"].style["display"] = "block"
 
         #pydom["div#roject-output-inner"].innerHTML = df_window(df)
         #document.getElementById('project-output-inner').innerHTML = df.to_html()
-        document.getElementById('project-output-inner').innerHTML = df_html(df)
+        if  document.getElementById('project-output-inner').innerHTML == "":
+            pydom["div#project-output"].style["display"] = "block"
+            project_output_inner_element = document.createElement('table')
+            project_output_inner_element.id = 'project-output-inner'
+            project_output_inner_element.setAttribute('class', 'center');
+            project_output_title_element = document.getElementById('project-output-title')
+            parent_node = project_output_title_element.parentNode;
+            parent_node.insertBefore(project_output_inner_element, project_output_title_element.nextSibling);     
+            document.getElementById('project-output-inner').innerHTML = df_html(df)
 
-        new_script = document.createElement('script')
-        new_script.innerHTML  = """$(document).ready(function(){$('#project-output-inner').DataTable({
-            "pageLength": 10
-        });});"""
-        document.getElementById('project-output').appendChild(new_script)
+            new_script = document.createElement('script')
+            new_script.id = 'project-output-inner-script'
+            new_script.innerHTML  = """$(document).ready(function(){$('#project-output-inner').DataTable({
+                "pageLength": 10
+            });});"""
+            document.getElementById('project-output').appendChild(new_script)
+            pydom["div#step2-selection-form"].style["display"] = "block"  
+        else:
+            pydom["div#project-output"].style["display"] = "block"
+            pydom["div#analyses-output"].style["display"] = "none"
+            pydom["pre#gantt-chart"].style["display"] = "none"
+            pydom["div#analyses-metadata-output"].style["display"] = "none"      
+            pydom["div#step6-selection-form"].style["display"] = "none"
+            pydom["div#analysis-step-metadata-download"].style["display"] = "none"
+            pydom["h1#step6-message"].style["display"] = "none"
+            pydom["div#step6-selection-form"].style["display"] = "none"
+            pydom["div#step3-selection-form"].style["display"] = "none"
+            ######################################
+            project_output_inner_element = document.createElement('table')
+            project_output_inner_element.id = 'project-output-inner'
+            project_output_inner_element.setAttribute('class', 'center');
+            project_output_title_element = document.getElementById('project-output-title')
+            parent_node = project_output_title_element.parentNode;
+            parent_node.insertBefore(project_output_inner_element, project_output_title_element.nextSibling);     
+            document.getElementById('project-output-inner').innerHTML = df_html(df) 
+            new_script = document.createElement('script')
+            new_script.id = 'project-output-inner-script'
+            new_script.innerHTML  = """$(document).ready(function(){$('#project-output-inner').DataTable({
+                "pageLength": 10
+            });});"""
+            document.getElementById('project-output').appendChild(new_script)   
+            pydom["div#step2-selection-form"].style["display"] = "block"        
 
         #display(df.to_html(), target="project-output-inner", append="False")
         #display(df_window(df), target="project-output-inner", append="False")
@@ -1074,6 +1124,7 @@ async def load_project_selection_info(event):
     console.log(f"{PROJECT_NAME}")
     pydom["div#step2-selection"].html = PROJECT_NAME
     display(f'Selected project name is: {PROJECT_NAME}',target ="step2-selection",append="True")
+    await remove_html_element('analyses-output-inner')
     try:
         PROJECT_ID = await get_project_id(authorization_metadata['jwt_token'], PROJECT_NAME)
         display(f'project id is : {PROJECT_ID}',target ="step2-selection",append="True")
@@ -1093,15 +1144,50 @@ async def load_project_selection_info(event):
     #df.sort_values(by='Analysis Start Date',ascending=False,inplace = True)
     ### using slicing to invert dataframe to give ICA default sorting
     #df = df[::-1]
-    pydom["div#analyses-output"].style["display"] = "block"
     #display(df, target="project-output-inner", append="False")
-    document.getElementById('analyses-output-inner').innerHTML = df_html(df)
+    
+    if document.getElementById('analyses-output-inner').innerHTML == "":
+        pydom["div#analyses-output"].style["display"] = "block"
+        analyses_output_inner_element = document.createElement('table')
+        analyses_output_inner_element.id = 'analyses-output-inner'
+        analyses_output_inner_element.setAttribute('class', 'center');
+        analyses_output_title_element = document.getElementById('analyses-output-title')
+        parent_node = analyses_output_title_element.parentNode;
+        parent_node.insertBefore(analyses_output_inner_element, analyses_output_title_element.nextSibling);     
+        document.getElementById('analyses-output-inner').innerHTML = df_html(df)
 
-    new_script = document.createElement('script')
-    new_script.innerHTML  = """$(document).ready(function(){$('#analyses-output-inner').DataTable({
-            "pageLength": 10
-        });});"""
-    document.getElementById('analyses-output').appendChild(new_script)
+        new_script = document.createElement('script')
+        new_script.id = 'analyses-output-inner-script'
+        new_script.innerHTML  = """$(document).ready(function(){$('#analyses-output-inner').DataTable({
+                "pageLength": 10
+            });});"""
+        document.getElementById('analyses-output').appendChild(new_script)
+    else:
+        pydom["div#analyses-output"].style["display"] = "block"
+        pydom["pre#gantt-chart"].style["display"] = "none"
+        pydom["div#analyses-output"].style["display"] = "none"
+        pydom["div#analyses-metadata-output"].style["display"] = "none"      
+        pydom["div#step6-selection-form"].style["display"] = "none"
+        pydom["div#analysis-step-metadata-download"].style["display"] = "none"
+        pydom["h1#step6-message"].style["display"] = "none"
+        pydom["div#step6-selection-form"].style["display"] = "none"
+
+        ######################################
+        analyses_output_inner_element = document.createElement('table')
+        analyses_output_inner_element.id = 'analyses-output-inner'
+        analyses_output_inner_element.setAttribute('class', 'center');
+        analyses_output_title_element = document.getElementById('analyses-output-title')
+        parent_node = analyses_output_title_element.parentNode;
+        parent_node.insertBefore(analyses_output_inner_element, analyses_output_title_element.nextSibling);     
+        document.getElementById('analyses-output-inner').innerHTML = df_html(df)
+
+        new_script = document.createElement('script')
+        new_script.id = 'analyses-output-inner-script'
+        new_script.innerHTML  = """$(document).ready(function(){$('#analyses-output-inner').DataTable({
+                "pageLength": 10
+            });});"""
+        document.getElementById('analyses-output').appendChild(new_script)
+        pydom["div#analyses-output"].style["display"] = "block"
     ### show field and submit button for STEP3:
     pydom["div#step3-selection-form"].style["display"] = "block"
 
@@ -1145,6 +1231,7 @@ def make_dir(my_dir):
     return 0
 ### STEP 4 get step log from ICA and generate gantt chart in mermaid
 async def generate_gantt(event):
+    
     ##### log in and get STEP file
     step_object = await get_analysis_steps(authorization_metadata['jwt_token'],analysis_metadata['project_id'],analysis_metadata['analysis_id'])
     step_file = 'step_metadata.json'
@@ -1179,28 +1266,72 @@ async def generate_gantt(event):
     for l in mermaid_content_v2:
         l1 = re.sub("\t","    ",l)
         mermaid_code += l1 + '\n'
-    document.getElementById('gantt-chart').innerHTML = f"{mermaid_code}"
-    # elements can be appended to any other element on the page
-    new_script = document.createElement('script')
-    new_script.setAttribute('type', 'module');
-    new_script.innerHTML  = """import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    const config = {
-        fontSize: 12, // Font size
-        sectionFontSize: 28, // Font size for sections
-        numberSectionStyles: 5, // The number of alternating section styles
-        startOnLoad: false,
-        securityLevel: 'loose',
-        };
-    mermaid.initialize(config);
-    await mermaid.run({
-        nodes: [document.getElementById('gantt-chart')],
-    });"""
-    #### https://developer.mozilla.org/en-US/docs/Web/API/Node/insertBefore
-    gantt_element = document.getElementById('gantt-chart')
-    parent_node = gantt_element.parentNode;
-    parent_node.insertBefore(new_script, gantt_element.nextSibling);
-    #document.body.appendChild(new_script)
-    #######
+    await remove_html_element('gantt-chart')
+    if document.getElementById('gantt-chart').innerHTML == "":
+        document.getElementById('gantt-chart').innerHTML = f"{mermaid_code}"
+        # elements can be appended to any other element on the page
+        new_script = document.createElement('script')
+        new_script.id = "gantt-chart-script"
+        new_script.setAttribute('type', 'module');
+        new_script.innerHTML  = """import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        const config = {
+            fontSize: 12, // Font size
+            sectionFontSize: 28, // Font size for sections
+            numberSectionStyles: 5, // The number of alternating section styles
+            startOnLoad: false,
+            securityLevel: 'loose',
+            };
+        mermaid.initialize(config);
+        await mermaid.run({
+            nodes: [document.getElementById('gantt-chart')],
+        });"""
+        #### https://developer.mozilla.org/en-US/docs/Web/API/Node/insertBefore
+        gantt_element = document.getElementById('gantt-chart')
+        parent_node = gantt_element.parentNode;
+        parent_node.insertBefore(new_script, gantt_element.nextSibling);
+        #document.body.appendChild(new_script)
+        #######
+    else:
+        pydom["pre#gantt-chart"].style["display"] = "none"
+        pydom["div#analyses-metadata-output"].style["display"] = "none"
+        pydom["div#step6-selection-form"].style["display"] = "none"
+        pydom["div#analysis-step-metadata-download"].style["display"] = "none"
+        pydom["h1#step6-message"].style["display"] = "none"
+        pydom["div#step6-selection-form"].style["display"] = "none"
+        if document.getElementById('gantt-chart-script') is not None:
+            document.getElementById('gantt-chart-script').remove()
+        #### delete and recreate gantt-chart element
+        if document.getElementById('gantt-chart') is not None:
+            document.getElementById('gantt-chart').remove()
+        gantt_element_create = document.createElement('pre')
+        gantt_element_create.setAttribute('class', 'mermaid')
+        gantt_element_create.id = "gantt-chart"
+        section4_element = document.getElementById('section4')
+        parent_node = section4_element.parentNode;
+        parent_node.insertBefore(gantt_element_create, section4_element.nextSibling);
+        gantt_element = document.getElementById('gantt-chart')
+        ####################
+        #gantt_element.removeChild();
+        document.getElementById('gantt-chart').innerHTML = f"{mermaid_code}"
+        # elements can be appended to any other element on the page
+        new_script = document.createElement('script')
+        new_script.setAttribute('type', 'module');
+        new_script.id = "gantt-chart-script"
+        new_script.innerHTML  = """import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        const config = {
+            fontSize: 12, // Font size
+            sectionFontSize: 28, // Font size for sections
+            numberSectionStyles: 5, // The number of alternating section styles
+            startOnLoad: false,
+            securityLevel: 'loose',
+            };
+        mermaid.initialize(config);
+        await mermaid.run({
+            nodes: [document.getElementById('gantt-chart')],
+        });"""
+        #### https://developer.mozilla.org/en-US/docs/Web/API/Node/insertBefore
+        parent_node = gantt_element.parentNode;
+        parent_node.insertBefore(new_script, gantt_element.nextSibling);
     pydom["pre#gantt-chart"].style["display"] = "block"
     #####
     ############
@@ -1272,13 +1403,49 @@ async def generate_gantt(event):
     #df = df[::-1]
     pydom["div#analyses-metadata-output"].style["display"] = "block"
     #display(df, target="project-output-inner", append="False")
-    document.getElementById('analyses-metadata-output-inner').innerHTML = df_html(df)
-
-    new_script = document.createElement('script')
-    new_script.innerHTML  = """$(document).ready(function(){$('#analyses-metadata-output-inner').DataTable({
-            "pageLength": 100
-        });});"""
-    document.getElementById('analyses-metadata-output').appendChild(new_script)
+    await remove_html_element('analyses-metadata-output-inner')
+    if document.getElementById('analyses-metadata-output-inner').innerHTML == "":
+        analyses_metadata_output_inner_element = document.createElement('table')
+        analyses_metadata_output_inner_element.id = 'analyses-metadata-output-inner'
+        analyses_metadata_output_inner_element.setAttribute('class', 'center');
+        troubleshoot_download_element = document.getElementById('analyses-metadata-output-title')
+        parent_node = troubleshoot_download_element.parentNode;
+        parent_node.insertBefore(analyses_metadata_output_inner_element, troubleshoot_download_element.nextSibling);   
+        document.getElementById('analyses-metadata-output-inner').innerHTML = df_html(df)
+    
+        new_script = document.createElement('script')
+        new_script.id = "analyses-metadata-output-inner-script"
+        new_script.innerHTML  = """$(document).ready(function(){$('#analyses-metadata-output-inner').DataTable({
+                "pageLength": 100
+            });});"""
+        document.getElementById('analyses-metadata-output').appendChild(new_script)
+    else:
+        ### delete script and table and regenerate it
+        pydom["div#analyses-metadata-output"].style["display"] = "none"
+        pydom["div#step6-selection-form"].style["display"] = "none"
+        pydom["div#analysis-step-metadata-download"].style["display"] = "none"
+        pydom["h1#step6-message"].style["display"] = "none"
+        if document.getElementById('analyses-metadata-output-inner-script') is not None:
+            document.getElementById('analyses-metadata-output-inner-script').remove()
+        if document.getElementById('analyses-metadata-output-inner') is not None:
+            document.getElementById('analyses-metadata-output-inner').remove()
+        if document.getElementById('analyses-metadata-output-inner_wrapper') is not None:
+            document.getElementById('analyses-metadata-output-inner_wrapper').remove()
+        analyses_metadata_output_inner_element = document.createElement('table')
+        analyses_metadata_output_inner_element.id = 'analyses-metadata-output-inner'
+        analyses_metadata_output_inner_element.setAttribute('class', 'center');
+        troubleshoot_download_element = document.getElementById('analyses-metadata-output-title')
+        parent_node = troubleshoot_download_element.parentNode;
+        parent_node.insertBefore(analyses_metadata_output_inner_element, troubleshoot_download_element.nextSibling);        
+        document.getElementById('analyses-metadata-output-inner').innerHTML = df_html(df)
+        pydom["div#analyses-metadata-output"].style["display"] = "block"
+        ##########################
+        new_script = document.createElement('script')
+        new_script.id = "analyses-metadata-output-inner-script"
+        new_script.innerHTML  = """$(document).ready(function(){$('#analyses-metadata-output-inner').DataTable({
+                "pageLength": 100
+            });});"""
+        document.getElementById('analyses-metadata-output').appendChild(new_script)
     #####################
     #new_script = document.createElement('py-config') 
     #json_config = "myfiles.json"
