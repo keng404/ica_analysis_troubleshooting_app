@@ -1016,6 +1016,8 @@ async def get_logs(jwt_token,project_id,analysis_id,extra_headers,output_dir):
     return log_urls
 
 ##########################################
+
+### helper functions to reload or hide elements if user is re-using different forms in the app
 HTML_ELEMENTS_TO_RELOAD = [
     'project-output-inner',
     'project-output-inner-script',
@@ -1041,6 +1043,34 @@ async def remove_html_element(html_element_id):
             html_element = document.getElementById(element)
             if html_element is not None and document.getElementById(element).innerHTML != "":
                 html_element.remove()
+
+
+HTML_ELEMENTS_TO_HIDE = [
+            "project-output",
+            "analyses-output",
+            "step3-selection-form",
+            "gantt-chart",
+            "troubleshoot-download",
+            "analyses-metadata-output",     
+            "step6-selection-form",
+            "analysis-step-metadata-download",
+            "step6-message",
+            "step6-selection-form"
+            ]
+            
+
+async def hide_html_element(html_element_id):
+    hide_elements = False
+    idx_of_interest = 0
+    for idx,element in enumerate(HTML_ELEMENTS_TO_HIDE):
+        if element == html_element_id:
+            idx_of_interest = idx
+            hide_elements = True
+    for idx,element in enumerate(HTML_ELEMENTS_TO_HIDE):
+        if idx > idx_of_interest and hide_elements is True:
+            html_element = document.getElementById(element)
+            if html_element is not None and document.getElementById(element).style.display == "block":
+                document.getElementById(element).style.display = "none";
 
 ###########
 #### STEP 1 in HTML
@@ -1071,6 +1101,7 @@ async def load_login_info(event):
     #### select project if needed
     if PROJECT_NAME is None:
         await remove_html_element('project-output-inner')
+        await hide_html_element('project-output')
         project_table = await list_projects(jwt_token)
         df = pd.DataFrame(project_table, columns = ['ICA Project Name', 'ICA Project ID']) 
 
@@ -1144,6 +1175,7 @@ async def load_project_selection_info(event):
     pydom["div#step2-selection"].html = PROJECT_NAME
     display(f'Selected project name is: {PROJECT_NAME}',target ="step2-selection",append="True")
     await remove_html_element('analyses-output-inner')
+    await hide_html_element('analyses-output')
     try:
         PROJECT_ID = await get_project_id(authorization_metadata['jwt_token'], PROJECT_NAME)
         display(f'project id is : {PROJECT_ID}',target ="step2-selection",append="True")
@@ -1294,6 +1326,7 @@ async def generate_gantt(event):
         l1 = re.sub("\t","    ",l)
         mermaid_code += l1 + '\n'
     await remove_html_element('gantt-chart')
+    await hide_html_element('gantt-chart')
     if  document.getElementById('gantt-chart') is None:
         gantt_element_create = document.createElement('pre')
         gantt_element_create.setAttribute('class', 'mermaid')
@@ -1439,6 +1472,7 @@ async def generate_gantt(event):
     pydom["div#analyses-metadata-output"].style["display"] = "block"
     #display(df, target="project-output-inner", append="False")
     await remove_html_element('analyses-metadata-output-inner')
+    await hide_html_element('analyses-metadata-output')
     if document.getElementById('analyses-metadata-output-inner') is None:
         analyses_metadata_output_inner_element = document.createElement('table')
         analyses_metadata_output_inner_element.id = 'analyses-metadata-output-inner'
