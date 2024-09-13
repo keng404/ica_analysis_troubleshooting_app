@@ -1016,7 +1016,18 @@ async def get_logs(jwt_token,project_id,analysis_id,extra_headers,output_dir):
     return log_urls
 
 ##########################################
-HTML_ELEMENTS_TO_RELOAD = ['project-output-inner','project-output-inner-script','project-output-inner_wrapper', 'analyses-output-inner','analyses-output-inner-script','analyses-output-inner_wrapper','gantt-chart','gantt-chart-script','analyses-metadata-output-inner-script','analyses-metadata-output-inner','analyses-metadata-output-inner_wrapper']
+HTML_ELEMENTS_TO_RELOAD = [
+    'project-output-inner',
+    'project-output-inner-script',
+    'project-output-inner_wrapper', 
+    'analyses-output-inner',
+    'analyses-output-inner-script',
+    'analyses-output-inner_wrapper',
+    'gantt-chart','gantt-chart-script',
+    'analyses-metadata-output-inner-script',
+    'analyses-metadata-output-inner',
+    'analyses-metadata-output-inner_wrapper'
+]
 
 async def remove_html_element(html_element_id):
     prune_elements = False
@@ -1069,6 +1080,14 @@ async def load_login_info(event):
 
         #pydom["div#roject-output-inner"].innerHTML = df_window(df)
         #document.getElementById('project-output-inner').innerHTML = df.to_html()
+        if document.getElementById('project-output-inner') is None:
+            project_output_inner_element = document.createElement('table')
+            project_output_inner_element.id = 'project-output-inner'
+            project_output_inner_element.setAttribute('class', 'center');
+            project_output_title_element = document.getElementById('project-output-title')
+            parent_node = project_output_title_element.parentNode;
+            parent_node.insertBefore(project_output_inner_element, project_output_title_element.nextSibling);     
+            document.getElementById('project-output-inner').innerHTML = ""
         if  document.getElementById('project-output-inner').innerHTML == "":
             pydom["div#project-output"].style["display"] = "block"
             project_output_inner_element = document.createElement('table')
@@ -1145,7 +1164,15 @@ async def load_project_selection_info(event):
     ### using slicing to invert dataframe to give ICA default sorting
     #df = df[::-1]
     #display(df, target="project-output-inner", append="False")
-    
+    if document.getElementById('analyses-output-inner') is None:
+        analyses_output_inner_element = document.createElement('table')
+        analyses_output_inner_element.id = 'analyses-output-inner'
+        analyses_output_inner_element.setAttribute('class', 'center');
+        analyses_output_title_element = document.getElementById('analyses-output-title')
+        parent_node = analyses_output_title_element.parentNode;
+        parent_node.insertBefore(analyses_output_inner_element, analyses_output_title_element.nextSibling);     
+        document.getElementById('analyses-output-inner').innerHTML = ""
+
     if document.getElementById('analyses-output-inner').innerHTML == "":
         pydom["div#analyses-output"].style["display"] = "block"
         analyses_output_inner_element = document.createElement('table')
@@ -1267,6 +1294,14 @@ async def generate_gantt(event):
         l1 = re.sub("\t","    ",l)
         mermaid_code += l1 + '\n'
     await remove_html_element('gantt-chart')
+    if  document.getElementById('gantt-chart') is None:
+        gantt_element_create = document.createElement('pre')
+        gantt_element_create.setAttribute('class', 'mermaid')
+        gantt_element_create.id = "gantt-chart"
+        section4_element = document.getElementById('section4')
+        parent_node = section4_element.parentNode;
+        parent_node.insertBefore(gantt_element_create, section4_element.nextSibling);
+        document.getElementById('gantt-chart').innerHTML = ""
     if document.getElementById('gantt-chart').innerHTML == "":
         document.getElementById('gantt-chart').innerHTML = f"{mermaid_code}"
         # elements can be appended to any other element on the page
@@ -1404,6 +1439,14 @@ async def generate_gantt(event):
     pydom["div#analyses-metadata-output"].style["display"] = "block"
     #display(df, target="project-output-inner", append="False")
     await remove_html_element('analyses-metadata-output-inner')
+    if document.getElementById('analyses-metadata-output-inner') is None:
+        analyses_metadata_output_inner_element = document.createElement('table')
+        analyses_metadata_output_inner_element.id = 'analyses-metadata-output-inner'
+        analyses_metadata_output_inner_element.setAttribute('class', 'center');
+        troubleshoot_download_element = document.getElementById('analyses-metadata-output-title')
+        parent_node = troubleshoot_download_element.parentNode;
+        parent_node.insertBefore(analyses_metadata_output_inner_element, troubleshoot_download_element.nextSibling);        
+        document.getElementById('analyses-metadata-output-inner').innerHTML = ""
     if document.getElementById('analyses-metadata-output-inner').innerHTML == "":
         analyses_metadata_output_inner_element = document.createElement('table')
         analyses_metadata_output_inner_element.id = 'analyses-metadata-output-inner'
